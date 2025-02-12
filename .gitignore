@@ -1,0 +1,5 @@
+/target
+
+# Local environment configurations
+.envrc
+.direnv/
