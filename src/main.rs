@@ -36,9 +36,7 @@ struct Cli {
 enum Game {
     /// Collect metrics from Factorio
     Factorio(collectors::FactorioOpts),
-
-    /// Collect metrics from Don't Starve Together
-    DontStarveTogether(collectors::DontStarveTogetherOpts),
+    // DontStarveTogether(collectors::DontStarveTogetherOpts),
 }
 
 fn main() -> Result<(), Error> {
@@ -46,7 +44,6 @@ fn main() -> Result<(), Error> {
 
     let mut collector: Box<dyn collectors::MetricsCollector> = match cli.command {
         Game::Factorio(opts) => Box::new(collectors::FactorioCollector::new(opts)?),
-        _ => todo!(),
     };
 
     let bind = format!("0.0.0.0:{}", cli.metrics_port);
