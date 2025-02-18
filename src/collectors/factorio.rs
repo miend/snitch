@@ -1,7 +1,7 @@
 use crate::collectors::{Metrics, MetricsCollector};
 use crate::Error;
 use clap::Parser;
-use rcon_client::{AuthRequest, RCONClient, RCONConfig, RCONRequest};
+use rcon_client::{AuthRequest, AuthResponse, RCONClient, RCONConfig, RCONRequest};
 
 #[derive(Parser)]
 pub struct FactorioOpts {
@@ -21,14 +21,46 @@ pub struct FactorioCollector {
 
 impl FactorioCollector {
     pub fn new(opts: FactorioOpts) -> Result<Self, Error> {
-        let mut client = RCONClient::new(RCONConfig {
-            url: format!("localhost:{}", opts.rcon_port),
-            read_timeout: Some(13),
-            write_timeout: Some(37),
-        })?;
+        let retry_seconds = std::time::Duration::from_secs(5);
 
-        let auth_result = client.auth(AuthRequest::new(opts.rcon_password))?;
-        assert!(auth_result.is_success());
+        let client: RCONClient;
+
+        loop {
+            let mut attempted_client = match RCONClient::new(RCONConfig {
+                url: format!("localhost:{}", opts.rcon_port),
+                read_timeout: Some(13),
+                write_timeout: Some(37),
+            }) {
+                Ok(c) => c,
+                Err(e) => {
+                    println!(
+                        "Failed to create RCON client: {}, retrying in {:?} seconds...",
+                        e, retry_seconds
+                    );
+                    std::thread::sleep(retry_seconds);
+                    continue;
+                }
+            };
+
+            match attempted_client.auth(AuthRequest::new(opts.rcon_password.clone())) {
+                Ok(result) => {
+                    if result.is_success() {
+                        client = attempted_client;
+                        break;
+                    }
+                    println!("Factorio RCON authentication failed -- is the password correct?");
+                }
+                Err(e) => {
+                    println!(
+                        "Couldn't attempt RCON auth to server: {}, retrying in {:?} seconds...",
+                        e, retry_seconds
+                    );
+                    std::thread::sleep(retry_seconds);
+                }
+            };
+        }
+
+        println!("RCON successfully connected!");
 
         Ok(FactorioCollector { client })
     }
