@@ -1,7 +1,7 @@
 use crate::collectors::{Metrics, MetricsCollector};
 use crate::Error;
 use clap::Parser;
-use rcon_client::{AuthRequest, AuthResponse, RCONClient, RCONConfig, RCONRequest};
+use rcon_client::{AuthRequest, RCONClient, RCONConfig, RCONRequest};
 
 #[derive(Parser)]
 pub struct FactorioOpts {
